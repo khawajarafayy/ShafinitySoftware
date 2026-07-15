@@ -328,6 +328,55 @@ export default function App() {
     service: "",
     message: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [submitMessage, setSubmitMessage] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name || !form.email || !form.message) {
+      setSubmitStatus('error');
+      setSubmitMessage('Please fill in all required fields.');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setSubmitStatus('idle');
+    setSubmitMessage('');
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(form),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSubmitStatus('success');
+        setSubmitMessage(data.message || 'Message sent successfully!');
+        setForm({
+          name: '',
+          email: '',
+          company: '',
+          service: '',
+          message: '',
+        });
+      } else {
+        setSubmitStatus('error');
+        setSubmitMessage(data.error || 'Failed to send the message.');
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setSubmitStatus('error');
+      setSubmitMessage('An error occurred. Please try again later.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 32);
@@ -553,7 +602,7 @@ export default function App() {
   const faqs = [
     {
       q: "What types of businesses do you typically work with?",
-      a: "We work with growth-stage startups, established SMBs, and enterprise teams across B2B SaaS, e-commerce, professional services, and fintech. Our sweet spot is companies investing $15k–$150k in a digital project with clear business objectives and a desire for a long-term partner.",
+      a: "We work with growth-stage startups, established SMBs, and enterprise teams across B2B SaaS, e-commerce, professional services, and fintech. Our sweet spot is companies investing starting from $999 in a digital project with clear business objectives and a desire for a long-term partner.",
     },
     {
       q: "How long does a typical project take from start to finish?",
@@ -569,7 +618,7 @@ export default function App() {
     },
     {
       q: "How is pricing structured?",
-      a: "We price per project, not by the hour. After a discovery call, we scope your project and present a fixed-price proposal with clear deliverables. No surprise invoices, no scope creep without explicit approval. Typical projects range from $18k to $120k depending on scope.",
+      a: "We price per project, not by the hour. After a discovery call, we scope your project and present a fixed-price proposal with clear deliverables. No surprise invoices, no scope creep without explicit approval. Typical projects start from $999 depending on scope.",
     },
     {
       q: "Can you work alongside our existing development or design team?",
@@ -1682,10 +1731,10 @@ export default function App() {
                 </p>
                 <div className="space-y-7">
                   {[
-                    { label: "Email", value: "hello@shafinitysol.com" },
+                    { label: "Email", value: "shafinity.solutions@gmail.com" },
                     { label: "Response time", value: "Within 24 hours" },
                     { label: "Availability", value: "Currently accepting new projects" },
-                    { label: "Typical project size", value: "$18,000 – $120,000" },
+                    { label: "Typical project size", value: "Starting from $999" },
                   ].map((item) => (
                     <div key={item.label}>
                       <div
@@ -1710,7 +1759,7 @@ export default function App() {
                   className="rounded-2xl border p-7 lg:p-10"
                   style={{ backgroundColor: T.surface, borderColor: T.border }}
                 >
-                  <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+                  <form className="space-y-5" onSubmit={handleSubmit}>
                     <div className="grid sm:grid-cols-2 gap-5">
                       {(["name", "email"] as const).map((field) => (
                         <div key={field}>
@@ -1723,11 +1772,12 @@ export default function App() {
                           <input
                             type={field === "email" ? "email" : "text"}
                             value={form[field]}
+                            disabled={isSubmitting}
                             onChange={(e) =>
                               setForm((f) => ({ ...f, [field]: e.target.value }))
                             }
                             placeholder={field === "email" ? "you@company.com" : "Your name"}
-                            className="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all duration-200"
+                            className="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all duration-200 disabled:opacity-60"
                             style={{
                               backgroundColor: T.bg,
                               borderColor: T.border,
@@ -1755,11 +1805,12 @@ export default function App() {
                       <input
                         type="text"
                         value={form.company}
+                        disabled={isSubmitting}
                         onChange={(e) =>
                           setForm((f) => ({ ...f, company: e.target.value }))
                         }
                         placeholder="Your company"
-                        className="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all duration-200"
+                        className="w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all duration-200 disabled:opacity-60"
                         style={{
                           backgroundColor: T.bg,
                           borderColor: T.border,
@@ -1784,10 +1835,11 @@ export default function App() {
                       </label>
                       <select
                         value={form.service}
+                        disabled={isSubmitting}
                         onChange={(e) =>
                           setForm((f) => ({ ...f, service: e.target.value }))
                         }
-                        className="w-full px-4 py-3 rounded-xl border text-sm outline-none"
+                        className="w-full px-4 py-3 rounded-xl border text-sm outline-none disabled:opacity-60"
                         style={{
                           backgroundColor: T.bg,
                           borderColor: T.border,
@@ -1812,12 +1864,13 @@ export default function App() {
                       </label>
                       <textarea
                         value={form.message}
+                        disabled={isSubmitting}
                         onChange={(e) =>
                           setForm((f) => ({ ...f, message: e.target.value }))
                         }
                         placeholder="What are you building? What's the goal? What's not working today?"
                         rows={4}
-                        className="w-full px-4 py-3 rounded-xl border text-sm outline-none resize-none transition-all duration-200"
+                        className="w-full px-4 py-3 rounded-xl border text-sm outline-none resize-none transition-all duration-200 disabled:opacity-60"
                         style={{
                           backgroundColor: T.bg,
                           borderColor: T.border,
@@ -1833,12 +1886,24 @@ export default function App() {
                       />
                     </div>
 
+                    {submitStatus === 'success' && (
+                      <div className="p-4 rounded-xl text-sm border font-medium text-center" style={{ backgroundColor: 'rgba(16, 42, 24, 0.6)', borderColor: '#1F4D2B', color: '#4ADE80' }}>
+                        {submitMessage}
+                      </div>
+                    )}
+                    {submitStatus === 'error' && (
+                      <div className="p-4 rounded-xl text-sm border font-medium text-center" style={{ backgroundColor: 'rgba(44, 21, 21, 0.6)', borderColor: '#4A1D1D', color: '#F87171' }}>
+                        {submitMessage}
+                      </div>
+                    )}
+
                     <button
                       type="submit"
-                      className="w-full flex items-center justify-center gap-2.5 py-4 rounded-xl text-sm font-semibold transition-all duration-200 hover:opacity-90"
+                      disabled={isSubmitting}
+                      className="w-full flex items-center justify-center gap-2.5 py-4 rounded-xl text-sm font-semibold transition-all duration-200 hover:opacity-90 disabled:opacity-50"
                       style={{ backgroundColor: T.accent, color: T.bg, fontFamily: T.sans }}
                     >
-                      Book Discovery Call <ArrowRight size={15} />
+                      {isSubmitting ? 'Sending...' : 'Book Discovery Call'} <ArrowRight size={15} />
                     </button>
 
                     <p className="text-[11px] text-center" style={{ color: T.sub }}>
@@ -1878,7 +1943,7 @@ export default function App() {
               </div>
               <div className="text-[11px] text-center sm:text-right" style={{ color: T.sub }}>
                 <p>Isla Mujeres, Cancun, Mexico</p>
-                <p>© 2024 ShafinitySol. All rights reserved.</p>
+                <p>© 2022 ShafinitySol. All rights reserved.</p>
               </div>
             </div>
           </div>
